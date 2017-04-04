@@ -11,7 +11,10 @@ export LANG=C
 shopt -s nullglob nocasematch
 
 # Internal variables.
-cache_dir="${HOME}/.wallpapers"
+wall_dir="${HOME}/.wallpapers"
+cache_dir="${wall_dir}/cache"
+xres_dir="${wall_dir}/xres"
+sample_dir="${wall_dir}/sample"
 newline=$'\n'
 color_count=16
 
@@ -26,6 +29,10 @@ rand_img() {
     # Create an array of images and exclude the current wallpaper.
     files=("${wal%/}"/*.{png,jpg,jpeg,jpe})
     files=("${files[@]/"$old_wall"}")
+    # Cache the wallpaper name
+    printf "%s\n" "$wal" > "${cache_dir}/wal"
+
+    # Generate 16 colors from the image and save them to a file.
 
     # If no files were found, exit.
     if ((${#files[@]} == 0)); then
@@ -63,9 +70,8 @@ get_colors() {
     [[ ! -f "$wal" ]] && wal="$old_wall"
 
     # Store cached colorscheme as 'dir-to-img.jpg'
-	cp $wal $cache_dir
-    cache_file="${cache_dir}/.$(basename $wal).base"
-	echo $cache_file
+	cp $wal $wall_dir
+    cache_file="${cache_dir}/$(basename $wal).col"
 
     # Cache the wallpaper name
     printf "%s\n" "$wal" > "${cache_dir}/wal"
@@ -74,7 +80,7 @@ get_colors() {
     if [[ -f "$cache_file" ]]; then
         colors=($(< "$cache_file"))
     else
-        colors=($(convert "${wal}"  +dither -colors $color_count -unique-colors txt:- | grep -E -o " \#.{6}"))
+        colors=($(convert "${wal}"  +dither -colors 18 -unique-colors txt:- | grep -E -o " \#.{6}"))
 
         # If imagemagick finds less than 16 colors, use a larger source number of colors.
         while (( "${#colors[@]}" <= 15 )); do
@@ -108,42 +114,14 @@ set_special() {
 
 send_sequences() {
     # Create string of escape sequences to send to the terminals.
-    set_special 10  "${colors[15]}"
-    set_special 11  "${alpha:+[${alpha}]}${colors[0]}"
-    set_special 12  "${colors[15]}"
-    set_special 13  "${colors[15]}"
-    set_special 14  "${alpha:+[${alpha}]}${colors[0]}"
+    # set_special 10  "${colors[15]}"
+    # set_special 11  "${alpha:+[${alpha}]}${colors[0]}"
+    # set_special 12  "${colors[15]}"
+    # set_special 13  "${colors[15]}"
+    # set_special 14  "${alpha:+[${alpha}]}${colors[0]}"
 
     # This escape sequence doesn't work in VTE terminals.
     [[ "$vte" != "on" ]] && set_special 708 "${alpha:+[${alpha}]}${colors[0]}"
-
-    set_color 0  "${colors[0]}"
-    set_color 1  "${colors[9]}"
-    set_color 2  "${colors[10]}"
-    set_color 3  "${colors[11]}"
-    set_color 4  "${colors[12]}"
-    set_color 5  "${colors[13]}"
-    set_color 6  "${colors[14]}"
-    set_color 7  "${colors[15]}"
-
-    # Create a comment color based on the brightness of the background.
-    case "${colors[0]:1:1}" in
-        [0-1]) set_color 8 "#666666" ;;
-        2)     set_color 8 "#757575" ;;
-        [3-4]) set_color 8 "#999999" ;;
-        5)     set_color 8 "#8a8a8a" ;;
-        [6-9]) set_color 8 "#a1a1a1" ;;
-        *)     set_color 8 "${colors[7]}" ;;
-    esac
-
-    set_color 9  "${colors[9]}"
-    set_color 10 "${colors[10]}"
-    set_color 11 "${colors[11]}"
-    set_color 12 "${colors[12]}"
-    set_color 13 "${colors[13]}"
-    set_color 14 "${colors[14]}"
-    set_color 15 "${colors[15]}"
-
     # Directing output to /dev/pts/* allows you to send output to all open terminals
     # on your system.
     for term in /dev/pts/[0-9]*; do
@@ -205,8 +183,13 @@ export_sequences() {
     out "export: Exported escape sequences"
 }
 
-export_envar() {
+export_xres() {
     printf "%s" "$x_colors"
+    out "export: Exported sh colors"
+}
+
+export_envar() {
+    printf "%s" "$sh_colors"
     out "export: Exported sh colors"
 }
 
@@ -229,10 +212,10 @@ export_plain() {
 }
 
 export_colors() {
-    export_sequences > "${cache_dir}/sequences"
-	export_envar     > "${cache_dir}/.$(basename $wal).Xres"
-	export_envar     > "$HOME/.colors"
-    export_plain     > "${cache_dir}/colors"
+	export_xres     > "${xres_dir}/$(basename $wal).Xres"
+	export_plain     > "${cache_dir}/$(basename $wal).col"
+	[[ "$set" == "on" ]] && export_sequences > "${cache_dir}/sequences"
+	[[ "$set" == "on" ]] && export_envar     > "$HOME/.colors"
 }
 
 
@@ -310,10 +293,10 @@ Flags:
 }
 
 get_args() {
-    while getopts ":a:chi:o:qrt" opt; do
+    while getopts ":a:chsi:o:qrt" opt; do
         case "$opt" in
             "a") alpha="$OPTARG" ;;
-            "c") rm -rf "${cache_dir}/schemes"; exit ;;
+            "c") rm -rf "${cache_dir}/*"; exit ;;
             "h") usage; exit 1 ;;
 
             "i")
@@ -324,6 +307,7 @@ get_args() {
             "o") external_script=("$OPTARG") ;;
             "q") quiet="on" ;;
             "r") reload="on" ;;
+			"s") set="on" ;;
             "t") vte="on" ;;
 
             "?")
@@ -349,27 +333,59 @@ get_args() {
     fi
 }
 
+init_colors() {
+    set_color 0  "${colors[0]}"
+    set_color 1  "${colors[9]}"
+    set_color 2  "${colors[10]}"
+    set_color 3  "${colors[11]}"
+    set_color 4  "${colors[12]}"
+    set_color 5  "${colors[13]}"
+    set_color 6  "${colors[14]}"
+    set_color 7  "${colors[15]}"
+    # Create a comment color based on the brightness of the background.
+    case "${colors[0]:1:1}" in
+        [0-1]) set_color 8 "#666666" ;;
+        2)     set_color 8 "#757575" ;;
+        [3-4]) set_color 8 "#999999" ;;
+        5)     set_color 8 "#8a8a8a" ;;
+        [6-9]) set_color 8 "#a1a1a1" ;;
+        *)     set_color 8 "${colors[7]}" ;;
+    esac
+    set_color 9  "${colors[9]}"
+    set_color 10 "${colors[10]}"
+    set_color 11 "${colors[11]}"
+    set_color 12 "${colors[12]}"
+    set_color 13 "${colors[13]}"
+    set_color 14 "${colors[14]}"
+    set_color 15 "${colors[15]}"
+}
+
 
 # FINISH UP
 
 
 main () {
+	mkdir -p $cache_dir 2> /dev/null
+	mkdir -p $xres_dir 2> /dev/null
+	mkdir -p $sample_dir 2> /dev/null
     get_args "$@"
 
     # Get 16 unique colors from the image.
     get_colors
 
+	init_colors
+
     # Send the color changing sequences to every open terminal emulator.
-    send_sequences
+	[[ "$set" == "on" ]] && send_sequences
 
     # Set the wallpaper.
-    set_wallpaper
+	[[ "$set" == "on" ]] && set_wallpaper
 
     # Export the colors in other formats.
-    export_colors
+    [[ "$set" != "on" ]] && export_colors
 
     # Merge colors into X env.
-    reload_xrdb
+    #reload_xrdb
 
     # Reload env
     reload_env >/dev/null 2>&1

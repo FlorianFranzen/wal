@@ -114,11 +114,11 @@ set_special() {
 
 send_sequences() {
     # Create string of escape sequences to send to the terminals.
-    # set_special 10  "${colors[15]}"
-    # set_special 11  "${alpha:+[${alpha}]}${colors[0]}"
-    # set_special 12  "${colors[15]}"
-    # set_special 13  "${colors[15]}"
-    # set_special 14  "${alpha:+[${alpha}]}${colors[0]}"
+    set_special 10  "${colors[15]}"
+    set_special 11  "${colors[0]}"
+    set_special 12  "${colors[15]}"
+    set_special 13  "${colors[15]}"
+    set_special 14  "${colors[0]}"
 
     # This escape sequence doesn't work in VTE terminals.
     [[ "$vte" != "on" ]] && set_special 708 "${alpha:+[${alpha}]}${colors[0]}"
@@ -334,23 +334,26 @@ get_args() {
 }
 
 init_colors() {
-    set_color 0  "${colors[0]}"
-    set_color 1  "${colors[9]}"
-    set_color 2  "${colors[10]}"
-    set_color 3  "${colors[11]}"
-    set_color 4  "${colors[12]}"
-    set_color 5  "${colors[13]}"
-    set_color 6  "${colors[14]}"
-    set_color 7  "${colors[15]}"
-    # Create a comment color based on the brightness of the background.
-    case "${colors[0]:1:1}" in
-        [0-1]) set_color 8 "#666666" ;;
-        2)     set_color 8 "#757575" ;;
-        [3-4]) set_color 8 "#999999" ;;
-        5)     set_color 8 "#8a8a8a" ;;
-        [6-9]) set_color 8 "#a1a1a1" ;;
-        *)     set_color 8 "${colors[7]}" ;;
-    esac
+	if [[ "$set" == "on" ]]; then 
+		set_color 0  "${colors[0]}"
+		set_color 1  "${colors[1]}"
+		set_color 2  "${colors[2]}"
+		set_color 3  "${colors[3]}"
+		set_color 4  "${colors[4]}"
+		set_color 5  "${colors[5]}"
+		set_color 6  "${colors[6]}"
+		set_color 7  "${colors[7]}"
+	else
+		set_color 0  "${colors[0]}"
+		set_color 1  "${colors[9]}"
+		set_color 2  "${colors[10]}"
+		set_color 3  "${colors[11]}"
+		set_color 4  "${colors[12]}"
+		set_color 5  "${colors[13]}"
+		set_color 6  "${colors[14]}"
+		set_color 7  "${colors[15]}"
+	fi
+    set_color 8 "${colors[8]}"
     set_color 9  "${colors[9]}"
     set_color 10 "${colors[10]}"
     set_color 11 "${colors[11]}"

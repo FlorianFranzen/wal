@@ -223,7 +223,7 @@ export_colors() {
 
 reload_colors() {
     # Source the current sequences
-    sequences="$(< "${HOME}/.cache/wal/sequences")"
+    sequences="$(< "${cache_dir}/sequences")"
 
     # If vte mode was used, remove the problem sequence.
     [[ "$vte" == "on" ]] && sequences="${sequences/??\]708\;\#??????}"
@@ -368,33 +368,33 @@ init_colors() {
 
 
 main () {
-	mkdir -p $cache_dir 2> /dev/null
-	mkdir -p $xres_dir 2> /dev/null
-	mkdir -p $sample_dir 2> /dev/null
-    get_args "$@"
+  mkdir -p $cache_dir 2> /dev/null
+  mkdir -p $xres_dir 2> /dev/null
+  mkdir -p $sample_dir 2> /dev/null
+  get_args "$@"
 
-    # Get 16 unique colors from the image.
-    get_colors
+  # Get 16 unique colors from the image.
+  get_colors
 
-	init_colors
+  init_colors
 
-    # Send the color changing sequences to every open terminal emulator.
-	[[ "$set" == "on" ]] && send_sequences
+  # Send the color changing sequences to every open terminal emulator.
+  [[ "$set" == "on" ]] && send_sequences
 
-    # Set the wallpaper.
-	[[ "$set" == "on" ]] && set_wallpaper
+  # Set the wallpaper.
+  [[ "$set" == "on" ]] && set_wallpaper
 
-    # Export the colors in other formats.
-    [[ "$set" != "on" ]] && export_colors
+  # Export the colors in other formats.
+  [[ "$set" != "on" ]] && export_colors
 
-    # Merge colors into X env.
-    #reload_xrdb
+  # Merge colors into X env.
+  #reload_xrdb
 
-    # Reload env
-    reload_env >/dev/null 2>&1
+  # Reload env
+  reload_env >/dev/null 2>&1
 
-    # Execute custom script.
-    type -p "${external_script[0]}" >/dev/null 2>&1 && "${external_script[@]}"
+  # Execute custom script.
+  type -p "${external_script[0]}" >/dev/null 2>&1 && "${external_script[@]}"
 }
 
 main "$@"

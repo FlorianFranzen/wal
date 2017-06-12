@@ -15,6 +15,7 @@ wall_dir="${HOME}/.wallpapers"
 cache_dir="${wall_dir}/cache"
 xres_dir="${wall_dir}/xres"
 sample_dir="${wall_dir}/sample"
+current_file="$(cat ${cache_dir}/wal|cut -d/ -f5)"
 newline=$'\n'
 color_count=16
 
@@ -120,6 +121,7 @@ send_sequences() {
     set_special 13  "${colors[15]}"
     set_special 14  "${colors[0]}"
 
+
     # This escape sequence doesn't work in VTE terminals.
     [[ "$vte" != "on" ]] && set_special 708 "${alpha:+[${alpha}]}${colors[0]}"
     # Directing output to /dev/pts/* allows you to send output to all open terminals
@@ -212,9 +214,10 @@ export_plain() {
 }
 
 export_colors() {
-	export_xres     > "${xres_dir}/$(basename $wal).Xres"
-	export_plain     > "${cache_dir}/$(basename $wal).col"
+	[[ "$set" != "on" ]] && export_xres      > "${xres_dir}/$(basename  $wal).Xres"
+	[[ "$set" != "on" ]] && export_plain     > "${cache_dir}/$(basename $wal).col"
 	[[ "$set" == "on" ]] && export_sequences > "${cache_dir}/sequences"
+	[[ "$set" == "on" ]] && export_scss      > "${cache_dir}/scss"
 	[[ "$set" == "on" ]] && export_envar     > "$HOME/.colors"
 }
 
@@ -385,7 +388,7 @@ main () {
   [[ "$set" == "on" ]] && set_wallpaper
 
   # Export the colors in other formats.
-  [[ "$set" != "on" ]] && export_colors
+  export_colors
 
   # Merge colors into X env.
   #reload_xrdb

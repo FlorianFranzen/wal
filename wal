@@ -81,7 +81,7 @@ get_colors() {
     if [[ -f "$cache_file" ]]; then
         colors=($(< "$cache_file"))
     else
-        colors=($(convert "${wal}"  +dither -colors 18 -unique-colors txt:- | grep -E -o " \#.{6}"))
+        colors=($(convert "${wal}"  +dither -colors 16 -unique-colors txt:- | grep -E -o " \#.{6}"))
 
         # If imagemagick finds less than 16 colors, use a larger source number of colors.
         while (( "${#colors[@]}" <= 15 )); do
